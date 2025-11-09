@@ -6,7 +6,7 @@ const app = express();
 const port = process.env.POST || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json())
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.3f7kxdk.mongodb.net/?appName=Cluster0`;
 
