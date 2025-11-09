@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.POST || 3000;
 
@@ -21,11 +21,73 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-
+    const db = client.db('bookHaven');
+    const bookCollection = db.collection('allBooks')
+    const userCollection = db.collection('userBooks')
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
+
+    app.get('/all-books', async(req, res)=>{
+      const cursor = bookCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
+    
+  
+    app.get('/book-details/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await bookCollection.findOne(query);   
+      res.send(result)
+    })
+
+
+    app.get('/myBooks', async(req, res)=>{
+      const cursor = userCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
+      app.post('/add-book', async(req, res)=>{
+     const newProduct = req.body;
+     const result = await userCollection.insertOne(newProduct);
+     res.send(result)
+    })
+
+
+    app.patch('/update-book/:id', async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)}
+      const updateBook = req.body
+      const update={
+        $set:{
+          title: updateBook.title,
+          author: updateBook.author,
+          genre: updateBook.genre,
+          rating:updateBook.rating,
+          summary: updateBook.summary,
+          coverImage: updateBook.coverImage,
+          userEmail: updateBook.userEmail,
+          userName: updateBook.userName
+
+        }
+      }
+
+      const result =  await userCollection.updateOne(query, update)
+      res.send(result)
+    })
+
+    app.delete('/delete-book/:id',async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)}
+      const result = await userCollection.deleteOne(query)
+      res.send(result)
+    })
+
+
   } finally {
     //await client.close();
   }
