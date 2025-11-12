@@ -24,6 +24,7 @@ async function run() {
     const db = client.db("bookHaven");
     const bookCollection = db.collection("allBooks");
     const userCollection = db.collection("userBooks");
+    const userCommentCollection = db.collection('comment')
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
@@ -71,6 +72,13 @@ async function run() {
       const result = await userCollection.insertOne(newProduct);
       res.send(result);
     });
+
+    //comments api
+    app.post('/comment',async(req,res)=>{
+      const NewComment = req.body;
+      const result = await userCommentCollection.insertOne(NewComment)
+      res.send(result)
+    })
 
     //  const updateInfo = {
     //   title,
