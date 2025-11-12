@@ -80,6 +80,12 @@ async function run() {
       res.send(result)
     })
 
+    app.get('/get-comment', async(req, res)=>{
+      const cursor = userCommentCollection.find();
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
     //  const updateInfo = {
     //   title,
     //   author,
