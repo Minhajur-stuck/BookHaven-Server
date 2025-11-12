@@ -81,10 +81,18 @@ async function run() {
     })
 
     app.get('/get-comment', async(req, res)=>{
+      
       const cursor = userCommentCollection.find();
       const result = await cursor.toArray()
       res.send(result)
     })
+
+    app.delete("/delete-comment/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
 
     //  const updateInfo = {
     //   title,
