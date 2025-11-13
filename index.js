@@ -5,6 +5,15 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.POST || 3000;
 
+
+var admin = require("firebase-admin");
+
+var serviceAccount = require("./smart-deals-shishirtry-firebase-adminsdk.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
 app.use(cors());
 app.use(express.json());
 
@@ -17,6 +26,29 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+
+const verifyFirebaseTOken= async (req, res, next)=>{
+  if(!req.headers.authorization){
+    return res.status(401).send({message: "unauthorized access"})
+  }
+
+  const token = req.headers.authorization.split(" ")[1]
+  if(!token){
+    return res.status(401).send({message: "unauthorized access"})
+  }
+
+  try{
+    const decode = await admin.auth().verifyIdToken(token)
+    req.token_email = decode.email
+    console.log(decode)
+    next()
+  }
+  catch(error){
+
+  }
+
+}
 
 async function run() {
   try {
@@ -55,19 +87,25 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/myBooks", async (req, res) => {
+    app.get("/myBooks", verifyFirebaseTOken, async (req, res) => {
       const email = req.query.email;
       
       const query = {};
       if (email) {
         query.userEmail = email;
       }
+
+      if(email !== req.token_email ){
+        return res.status(403).send({ message: "forbidden access" });
+      }
       const cursor = userCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
 
-    app.post("/add-book", async (req, res) => {
+    app.post("/add-book", verifyFirebaseTOken, async (req, res) => {
+      const token = req.headers.authorization
+      console.log(token)
       const newProduct = req.body;
       const result = await userCollection.insertOne(newProduct);
       res.send(result);
@@ -100,7 +138,7 @@ async function run() {
     //   userName,
     // };
 
-    app.patch("/update-book/:id", async (req, res) => {
+    app.patch("/update-book/:id",verifyFirebaseTOken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updateBook = req.body;
