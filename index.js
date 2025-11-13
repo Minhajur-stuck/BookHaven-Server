@@ -41,7 +41,7 @@ const verifyFirebaseTOken= async (req, res, next)=>{
   try{
     const decode = await admin.auth().verifyIdToken(token)
     req.token_email = decode.email
-    console.log(decode)
+    
     next()
   }
   catch(error){
@@ -104,8 +104,6 @@ async function run() {
     });
 
     app.post("/add-book", verifyFirebaseTOken, async (req, res) => {
-      const token = req.headers.authorization
-      console.log(token)
       const newProduct = req.body;
       const result = await userCollection.insertOne(newProduct);
       res.send(result);
@@ -127,22 +125,12 @@ async function run() {
 
     
 
-    //  const updateInfo = {
-    //   title,
-    //   author,
-    //   genre,
-    //   rating,
-    //   summary,
-    //   image,
-    //   userEmail,
-    //   userName,
-    // };
+    
 
     app.patch("/update-book/:id",verifyFirebaseTOken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updateBook = req.body;
-      console.log(updateBook);
       const update = {
         $set: {
           title: updateBook.title,
