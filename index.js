@@ -8,7 +8,9 @@ const port = process.env.POST || 3000;
 
 var admin = require("firebase-admin");
 
-var serviceAccount = require("./smart-deals-shishirtry-firebase-adminsdk.json");
+// index.js
+const decoded = Buffer.from(process.env.FIREBASE_SERVICE_KEY, "base64").toString("utf8");
+const serviceAccount = JSON.parse(decoded);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -57,7 +59,7 @@ async function run() {
     const bookCollection = db.collection("allBooks");
     const userCollection = db.collection("userBooks");
     const userCommentCollection = db.collection('comment')
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );

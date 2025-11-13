@@ -1,3 +1,4 @@
 node_modules 
 .env
 smart-deals-shishirtry-firebase-adminsdk.json
+.vercel
