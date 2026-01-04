@@ -5,11 +5,13 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.POST || 3000;
 
-
 var admin = require("firebase-admin");
 
 // index.js
-const decoded = Buffer.from(process.env.FIREBASE_SERVICE_KEY, "base64").toString("utf8");
+const decoded = Buffer.from(
+  process.env.FIREBASE_SERVICE_KEY,
+  "base64"
+).toString("utf8");
 const serviceAccount = JSON.parse(decoded);
 
 admin.initializeApp({
@@ -29,48 +31,73 @@ const client = new MongoClient(uri, {
   },
 });
 
-
-const verifyFirebaseTOken= async (req, res, next)=>{
-  if(!req.headers.authorization){
-    return res.status(401).send({message: "unauthorized access"})
+const verifyFirebaseTOken = async (req, res, next) => {
+  if (!req.headers.authorization) {
+    return res.status(401).send({ message: "unauthorized access" });
   }
 
-  const token = req.headers.authorization.split(" ")[1]
-  if(!token){
-    return res.status(401).send({message: "unauthorized access"})
+  const token = req.headers.authorization.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
   }
 
-  try{
-    const decode = await admin.auth().verifyIdToken(token)
-    req.token_email = decode.email
-    
-    next()
-  }
-  catch(error){
+  try {
+    const decode = await admin.auth().verifyIdToken(token);
+    req.token_email = decode.email;
 
-  }
-
-}
+    next();
+  } catch (error) {}
+};
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("bookHaven");
     const bookCollection = db.collection("allBooks");
     const userCollection = db.collection("userBooks");
-    const userCommentCollection = db.collection('comment')
+    const userCommentCollection = db.collection("comment");
     // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
 
     app.get("/all-books", async (req, res) => {
-      const cursor = bookCollection.find();
+      const searchText = req.query.searchText;
+
+      let query = {};
+      if (searchText) {
+        query.$or = [
+          {
+            title: { $regex: searchText, $options: "i" },
+          },
+          { author: { $regex: searchText, $options: "i" } },
+          { genre: { $regex: searchText, $options: "i" } },
+        ];
+      }
+      const cursor = bookCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
+
+    // app.get("/all-books", async (req, res) => {
+    //   const searchText = req.query.searchText;
+
+    //   if (searchText) {
+    //     query.$or = [
+    //       {
+    //         title: { $regex: searchText, $options: "i" },
+    //       },
+    //     ];
+    //   }
+
+    //   const cursor = bookCollection.find(query);
+
+    //   const result = await cursor.toArray();
+    //   res.send(result);
+    // });
+
     app.get("/latest-books", async (req, res) => {
-      const cursor = bookCollection.find().sort({ _id: -1 }).limit(6);
+      const cursor = bookCollection.find().sort({ _id: -1 }).limit(8);
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -91,13 +118,13 @@ async function run() {
 
     app.get("/myBooks", verifyFirebaseTOken, async (req, res) => {
       const email = req.query.email;
-      
+
       const query = {};
       if (email) {
         query.userEmail = email;
       }
 
-      if(email !== req.token_email ){
+      if (email !== req.token_email) {
         return res.status(403).send({ message: "forbidden access" });
       }
       const cursor = userCollection.find(query);
@@ -112,24 +139,19 @@ async function run() {
     });
 
     //comments api
-    app.post('/comment',async(req,res)=>{
+    app.post("/comment", async (req, res) => {
       const NewComment = req.body;
-      const result = await userCommentCollection.insertOne(NewComment)
-      res.send(result)
-    })
+      const result = await userCommentCollection.insertOne(NewComment);
+      res.send(result);
+    });
 
-    app.get('/get-comment', async(req, res)=>{
-      
+    app.get("/get-comment", async (req, res) => {
       const cursor = userCommentCollection.find();
-      const result = await cursor.toArray()
-      res.send(result)
-    })
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
-    
-
-    
-
-    app.patch("/update-book/:id",verifyFirebaseTOken, async (req, res) => {
+    app.patch("/update-book/:id", verifyFirebaseTOken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updateBook = req.body;
@@ -169,5 +191,3 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`server is running on ${port}`);
 });
-
-
